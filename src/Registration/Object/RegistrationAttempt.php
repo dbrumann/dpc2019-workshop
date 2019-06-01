@@ -1,0 +1,37 @@
+<?php declare(strict_types = 1);
+
+namespace App\Registration\Object;
+
+use DateTimeImmutable;
+use Symfony\Component\Validator\Constraints as Assert;
+
+final class RegistrationAttempt
+{
+    /**
+     * @Assert\NotNull()
+     * @Assert\Length(max=100)
+     */
+    public $name;
+
+    /**
+     * @Assert\NotNull()
+     * @Assert\Email()
+     */
+    public $email;
+
+    /**
+     * @Assert\NotNull()
+     * @Assert\Length(min=6)
+     */
+    public $password;
+
+    /**
+     * @Assert\Type(type="DateTimeImmutable")
+     */
+    public $createdAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+    }
+}

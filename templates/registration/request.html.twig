@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block main %}
+    <div class="my-3 p-3 bg-white rounded shadow-sm">
+        {{ form_start(form) }}
+            {{ form_row(form.name) }}
+            {{ form_row(form.email) }}
+            <div class="form-row">
+                <div class="offset-sm-2 col-sm-10">
+                    <button class="btn btn-primary" type="submit">Register</button>
+                </div>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

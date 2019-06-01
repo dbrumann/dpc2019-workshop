@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>{% block title %}DPC 2019 Workshop{% endblock %}</title>
+        {% block stylesheets %}
+            <link rel="stylesheet" href="{{ asset('build/css/bootstrap.min.css') }}">
+        {% endblock %}
+    </head>
+    <body class="bg-light">
+        {% block body %}
+            <div class="container">
+                {% block header %}
+                <div class="d-flex align-items-center p-3 my-3 text-white-50 bg-dark rounded shadow-sm">
+                    <div class="lh-100">
+                        <h6 class="mb-0 text-white lh-100">{% block header_title %}Writr{% endblock %}</h6>
+                        <small>{% block header_subtitle %}Write messages{% endblock %}</small>
+                    </div>
+                </div>
+                {% endblock %}
+                {% block main %}{% endblock %}
+            </div>
+        {% endblock %}
+        {% block javascripts %}{% endblock %}
+    </body>
+</html>
