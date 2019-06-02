@@ -2,19 +2,20 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Registration\Form\RegistrationAttemptType;
 use App\Registration\Form\RegistrationRequestType;
-use App\Registration\Object\RegistrationAttempt;
 use App\Registration\Registration;
-use const DIRECTORY_SEPARATOR;
-use function file_get_contents;
-use function json_decode;
-use function rtrim;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use function file_get_contents;
+use function json_decode;
+use function rtrim;
+use const DIRECTORY_SEPARATOR;
 
 /**
  * @Route(name="registration_")
@@ -54,22 +55,28 @@ class RegistrationController extends AbstractController
     /**
      * @Route("/register/{token}", name="register")
      */
-    public function register(string $token, Request $request, Registration $registration, string $confirmationStorageDir): Response
-    {
+    public function register(
+        string $token,
+        Request $request,
+        Registration $registration,
+        string $confirmationStorageDir,
+        UserPasswordEncoderInterface $passwordEncoder
+    ): Response {
         $filesystem = new Filesystem();
         $confirmationStorageDir = rtrim($confirmationStorageDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $filename = $confirmationStorageDir . $token . '.json';
 
-        if (! $filesystem->exists($filename)) {
+        if (!$filesystem->exists($filename)) {
             throw $this->createNotFoundException();
         }
-        $registrationAttempt = $this->createRegistrationAttempt($filename);
+        $user = $this->createUserFromConfirmation($filename);
 
-        $form = $this->createForm(RegistrationAttemptType::class, $registrationAttempt);
+        $form = $this->createForm(RegistrationAttemptType::class, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $registration->register($token, $form->getData());
+            $user->setPassword($passwordEncoder->encodePassword($user, $user->getPassword()));
+            $registration->register($token, $user);
 
             return $this->redirectToRoute('registration_success');
         }
@@ -90,14 +97,14 @@ class RegistrationController extends AbstractController
         return $this->render('registration/success.html.twig');
     }
 
-    private function createRegistrationAttempt(string $filename): RegistrationAttempt
+    private function createUserFromConfirmation(string $filename): User
     {
         $data = json_decode(file_get_contents($filename), true);
 
-        $attempt = new RegistrationAttempt();
-        $attempt->name = $data['name'];
-        $attempt->email = $data['email'];
+        $user = new User();
+        $user->setName($data['name']);
+        $user->setEmail($data['email']);
 
-        return $attempt;
+        return $user;
     }
 }

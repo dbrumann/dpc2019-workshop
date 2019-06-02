@@ -2,7 +2,7 @@
 
 namespace App\Registration\Form;
 
-use App\Registration\Object\RegistrationAttempt;
+use App\Entity\User;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -43,6 +43,6 @@ final class RegistrationAttemptType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver)
     {
-        $resolver->setDefault('data_class', RegistrationAttempt::class);
+        $resolver->setDefault('data_class', User::class);
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Registration;
 
-use App\Registration\Object\RegistrationAttempt;
+use App\Entity\User;
 use App\Registration\Object\RegistrationRequest;
-use function dd;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use function hash;
 use function json_encode;
@@ -13,15 +13,17 @@ use function substr;
 use const DIRECTORY_SEPARATOR;
 use const JSON_PRETTY_PRINT;
 
-class Registration
+final class Registration
 {
     private $requestStorageDir;
     private $confirmationStorageDir;
+    private $entityManager;
 
-    public function __construct(string $requestStorageDir, string $confirmationStorageDir)
+    public function __construct(string $requestStorageDir, string $confirmationStorageDir, EntityManagerInterface $entityManager)
     {
         $this->requestStorageDir = rtrim($requestStorageDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         $this->confirmationStorageDir = rtrim($confirmationStorageDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $this->entityManager = $entityManager;
     }
 
     public function request(RegistrationRequest $request): void
@@ -43,9 +45,13 @@ class Registration
         return substr($filename, 0, -5);
     }
 
-    public function register(string $token, RegistrationAttempt $attempt): void
+    public function register(string $token, User $user): void
     {
-        // TODO Save user
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        $filesystem = new Filesystem();
+        $filesystem->remove($this->confirmationStorageDir . $token . '.json');
 
         // TODO Send confirmation email
     }
