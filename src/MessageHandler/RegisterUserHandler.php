@@ -5,8 +5,10 @@ namespace App\MessageHandler;
 use App\Message\RegisterUserMessage;
 use App\Message\UserRegisteredMessage;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DispatchAfterCurrentBusStamp;
 
 final class RegisterUserHandler implements MessageHandlerInterface
 {
@@ -22,8 +24,10 @@ final class RegisterUserHandler implements MessageHandlerInterface
     public function __invoke(RegisterUserMessage $message): void
     {
         $this->entityManager->persist($message->getUser());
-        $this->entityManager->flush();
 
-        $this->messageBus->dispatch(new UserRegisteredMessage($message->getToken()));
+        $event = new UserRegisteredMessage($message->getToken(), $message->getUser());
+        $eventMessage = (new Envelope($event))->with(new DispatchAfterCurrentBusStamp());
+
+        $this->messageBus->dispatch($eventMessage);
     }
 }
