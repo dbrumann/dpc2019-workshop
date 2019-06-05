@@ -3,21 +3,20 @@
 namespace App\MessageHandler;
 
 use App\Message\RegisterUserMessage;
-use const DIRECTORY_SEPARATOR;
+use App\Message\UserRegisteredMessage;
 use Doctrine\ORM\EntityManagerInterface;
-use function rtrim;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class RegisterUserHandler implements MessageHandlerInterface
 {
     private $entityManager;
-    private $confirmationStorageDir;
+    private $messageBus;
 
-    public function __construct(EntityManagerInterface $entityManager, string $confirmationStorageDir)
+    public function __construct(EntityManagerInterface $entityManager, MessageBusInterface $messageBus)
     {
         $this->entityManager = $entityManager;
-        $this->confirmationStorageDir = rtrim($confirmationStorageDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $this->messageBus = $messageBus;
     }
 
     public function __invoke(RegisterUserMessage $message): void
@@ -25,7 +24,6 @@ final class RegisterUserHandler implements MessageHandlerInterface
         $this->entityManager->persist($message->getUser());
         $this->entityManager->flush();
 
-        $filesystem = new Filesystem();
-        $filesystem->remove($this->confirmationStorageDir . $message->getToken() . '.json');
+        $this->messageBus->dispatch(new UserRegisteredMessage($message->getToken()));
     }
 }
