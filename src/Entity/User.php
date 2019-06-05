@@ -2,7 +2,9 @@
 
 namespace App\Entity;
 
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use function hash;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -36,11 +38,30 @@ class User implements UserInterface
     private $email;
 
     /**
-     * @Assert\NotNull()
-     *
-     * @ORM\Column(type="string", length=128)
+     * @ORM\Column(type="string", length=128, nullable=true)
      */
     private $password;
+
+    /**
+     * @ORM\Column(type="string", length=8)
+     */
+    private $token;
+
+    /**
+     * @ORM\Column(type="datetime_immutable")
+     */
+    private $createdAt;
+
+    /**
+     * @ORM\Column(type="datetime_immutable", nullable=true)
+     */
+    private $confirmedAt;
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+        $this->token = hash('crc32', $this->createdAt->format('U'));
+    }
 
     public function getId(): ?int
     {
@@ -80,6 +101,21 @@ class User implements UserInterface
     public function setPassword(string $password): void
     {
         $this->password = $password;
+    }
+
+    public function getToken(): string
+    {
+        return $this->token;
+    }
+
+    public function getConfirmedAt(): ?DateTimeImmutable
+    {
+        return $this->confirmedAt;
+    }
+
+    public function setConfirmedAt(DateTimeImmutable $confirmedAt): void
+    {
+        $this->confirmedAt = $confirmedAt;
     }
 
     public function getRoles(): array

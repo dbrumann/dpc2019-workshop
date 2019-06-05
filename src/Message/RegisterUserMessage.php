@@ -3,10 +3,19 @@
 namespace App\Message;
 
 use App\Entity\User;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class RegisterUserMessage
 {
+    /**
+     * @Assert\NotNull()
+     * @Assert\Length()
+     */
     private $token;
+
+    /**
+     * @Assert\Valid()
+     */
     private $user;
 
     public function __construct(string $token, User $user)

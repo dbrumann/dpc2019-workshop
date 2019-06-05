@@ -4,20 +4,19 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Message\RegisterUserMessage;
+use App\Message\RequestRegistrationMessage;
 use App\Registration\Form\RegistrationAttemptType;
 use App\Registration\Form\RegistrationRequestType;
+use App\Registration\Object\RegistrationRequest;
 use App\Registration\Registration;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
-use function file_get_contents;
-use function json_decode;
-use function rtrim;
-use const DIRECTORY_SEPARATOR;
 
 /**
  * @Route(name="registration_")
@@ -33,9 +32,13 @@ class RegistrationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $registration->request($form->getData());
+            /** @var RegistrationRequest $registrationRequest */
+            $registrationRequest = $form->getData();
 
-            return $this->redirectToRoute('registration_confirmation');
+            $envelope = $this->dispatchMessage(new RequestRegistrationMessage($registrationRequest->name, $registrationRequest->email));
+            $token = $envelope->last(HandledStamp::class)->getResult();
+
+            return $this->redirectToRoute('registration_register', ['token' => $token]);
         }
 
         return $this->render(
@@ -61,17 +64,13 @@ class RegistrationController extends AbstractController
         string $token,
         Request $request,
         MessageBusInterface $messageBus,
-        string $confirmationStorageDir,
+        EntityManagerInterface $entityManager,
         UserPasswordEncoderInterface $passwordEncoder
     ): Response {
-        $filesystem = new Filesystem();
-        $confirmationStorageDir = rtrim($confirmationStorageDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-        $filename = $confirmationStorageDir . $token . '.json';
-
-        if (!$filesystem->exists($filename)) {
-            throw $this->createNotFoundException();
+        $user = $entityManager->getRepository(User::class)->findOneByToken($token);
+        if (!$user) {
+            throw $this->createNotFoundException('Could not find a user for the provided token.');
         }
-        $user = $this->createUserFromConfirmation($filename);
 
         $form = $this->createForm(RegistrationAttemptType::class, $user);
         $form->handleRequest($request);
@@ -97,16 +96,5 @@ class RegistrationController extends AbstractController
     public function confirmRegistration(): Response
     {
         return $this->render('registration/success.html.twig');
-    }
-
-    private function createUserFromConfirmation(string $filename): User
-    {
-        $data = json_decode(file_get_contents($filename), true);
-
-        $user = new User();
-        $user->setName($data['name']);
-        $user->setEmail($data['email']);
-
-        return $user;
     }
 }
