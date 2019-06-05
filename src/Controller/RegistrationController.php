@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Message\RegisterUserMessage;
 use App\Registration\Form\RegistrationAttemptType;
 use App\Registration\Form\RegistrationRequestType;
 use App\Registration\Registration;
@@ -10,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use function file_get_contents;
@@ -58,7 +60,7 @@ class RegistrationController extends AbstractController
     public function register(
         string $token,
         Request $request,
-        Registration $registration,
+        MessageBusInterface $messageBus,
         string $confirmationStorageDir,
         UserPasswordEncoderInterface $passwordEncoder
     ): Response {
@@ -76,7 +78,7 @@ class RegistrationController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $user->setPassword($passwordEncoder->encodePassword($user, $user->getPassword()));
-            $registration->register($token, $user);
+            $messageBus->dispatch(new RegisterUserMessage($token, $user));
 
             return $this->redirectToRoute('registration_success');
         }
